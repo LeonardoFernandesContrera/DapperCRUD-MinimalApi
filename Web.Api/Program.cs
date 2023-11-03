@@ -1,9 +1,22 @@
+using Dapper;
 using Microsoft.Data.SqlClient;
+using Web.Api.EndPoints;
+using Web.Api.Models;
+using Web.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddSingleton(ServiceProvider =>
+{
+    var configuration = ServiceProvider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new ApplicationException("The connection string is null");
+
+    return new SqlConnectionFactory(connectionString);
+});
 
 var app = builder.Build();
 
@@ -13,15 +26,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.MapCustomerEndpoints();
+
 app.UseHttpsRedirection();
-
-app.MapGet("customers",(IConfiguration configuration) =>
-{
-    var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-    using var connection = new SqlConnection(connectionString);
-
-    const string sql = "SELECT * FROM Customers";
-});
 
 app.Run();
